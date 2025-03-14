@@ -2,6 +2,85 @@ import streamlit as st
 import pandas as pd
 import os
 
+#########################
+#  Dictionnaires de texte
+#########################
+translations = {
+    "it": {
+        "app_title": "Sondaggio Nutrizionale - MVP",
+        "question1": "1) Qual è il tuo peso e altezza?",
+        "question2": "2) Qual è il tuo livello di attività fisica?",
+        "question3": "3) Quali sono le tue preferenze alimentari?",
+        "question4": "4) Sei un tipo notturno o mattiniero?",
+        "question5": "5) Qual è il tuo obiettivo?",
+        "submit_button": "Invia e Ottieni Consigli",
+        "bmi_label": "Il tuo BMI è:",
+        "macro_advice": "**Consigli sui macronutrienti:**",
+        "calorie_advice": "**Fabbisogno calorico aggiuntivo:**",
+        "diet_advice": "**Consigli alimentari in base alle preferenze:**",
+        "meal_advice": "**Consigli su orario dei pasti:**",
+        "goal_advice": "**Consigli in base al tuo obiettivo:**",
+    },
+    "en": {
+        "app_title": "Nutritional Survey - MVP",
+        "question1": "1) What is your weight and height?",
+        "question2": "2) What is your physical activity level?",
+        "question3": "3) What are your dietary preferences?",
+        "question4": "4) Are you a night owl or a morning person?",
+        "question5": "5) What is your goal?",
+        "submit_button": "Submit and Get Advice",
+        "bmi_label": "Your BMI is:",
+        "macro_advice": "**Macronutrient Advice:**",
+        "calorie_advice": "**Additional Caloric Needs:**",
+        "diet_advice": "**Nutritional Advice Based on Preferences:**",
+        "meal_advice": "**Meal Timing Advice:**",
+        "goal_advice": "**Advice Based on Your Goal:**",
+    },
+    "fr": {
+        "app_title": "Sondage Nutritionnel - MVP",
+        "question1": "1) Quel est votre poids et votre taille ?",
+        "question2": "2) Quel est votre niveau d'activité physique ?",
+        "question3": "3) Quelles sont vos préférences alimentaires ?",
+        "question4": "4) Êtes-vous un couche-tard ou un lève-tôt ?",
+        "question5": "5) Quel est votre objectif ?",
+        "submit_button": "Envoyer et Obtenir des Conseils",
+        "bmi_label": "Votre IMC est :",
+        "macro_advice": "**Conseils sur les macronutriments :**",
+        "calorie_advice": "**Besoin calorique supplémentaire :**",
+        "diet_advice": "**Conseils alimentaires selon vos préférences :**",
+        "meal_advice": "**Conseils sur l'horaire des repas :**",
+        "goal_advice": "**Conseils basés sur votre objectif :**",
+    },
+}
+
+# Options pour chaque question, selon la langue
+activity_options = {
+    "it": ["Sedentario", "Attivo", "Atleta"],
+    "en": ["Sedentary", "Active", "Athlete"],
+    "fr": ["Sédentaire", "Actif", "Athlète"],
+}
+
+diet_options = {
+    "it": ["Onnivoro", "Vegetariano", "Vegano"],
+    "en": ["Omnivore", "Vegetarian", "Vegan"],
+    "fr": ["Omnivore", "Végétarien", "Vegan"],
+}
+
+sleep_options = {
+    "it": ["Notturno", "Mattiniero"],
+    "en": ["Night owl", "Morning person"],
+    "fr": ["Couche-tard", "Lève-tôt"],
+}
+
+goal_options = {
+    "it": ["Perdere peso", "Mantenere il peso", "Performance sportiva"],
+    "en": ["Lose weight", "Maintain weight", "Sports performance"],
+    "fr": ["Perdre du poids", "Maintenir le poids", "Performance sportive"],
+}
+
+#########################
+#     Funzioni esistenti
+#########################
 def calcola_bmi(peso, altezza):
     """
     Calcolo del BMI:
@@ -47,25 +126,25 @@ def fabbisogno_calorico_base(livello_attivita):
     Esempio di calcolo (semplificato) del fabbisogno calorico aggiuntivo
     in base al livello di attività fisica.
     """
-    if livello_attivita == "Sedentario":
+    if livello_attivita in ["Sedentario", "Sédentaire", "Sedentary"]:
         return "Basso fabbisogno calorico aggiuntivo"
-    elif livello_attivita == "Attivo":
+    elif livello_attivita in ["Attivo", "Actif", "Active"]:
         return "Medio fabbisogno calorico aggiuntivo"
-    else:  # Atleta
+    else:  # "Atleta", "Athlète", "Athlete"
         return "Alto fabbisogno calorico aggiuntivo"
 
 def consigli_alimentari(preferenze):
     """
     Suggerisce alimenti in base alle preferenze alimentari.
     """
-    if preferenze == "Onnivoro":
+    if preferenze in ["Onnivoro", "Omnivore"]:
         return "Puoi includere fonti proteiche animali e vegetali, frutta e verdura di stagione."
-    elif preferenze == "Vegetariano":
+    elif preferenze in ["Vegetariano", "Végétarien", "Vegetarian"]:
         return (
             "Concentrati su legumi, uova, latticini (se consentiti), frutta e verdura. "
             "Attenzione al fabbisogno di proteine e ferro."
         )
-    else:  # Vegano
+    else:  # "Vegano", "Vegan"
         return (
             "Focalizzati su legumi, cereali integrali, frutta secca e semi. "
             "Monitora l'apporto di vitamina B12, ferro e calcio."
@@ -75,12 +154,12 @@ def consigli_orari_pasti(cronotipo):
     """
     Consigli su orari dei pasti in base al cronotipo.
     """
-    if cronotipo == "Notturno":
+    if cronotipo in ["Notturno", "Night owl", "Couche-tard"]:
         return (
             "Potresti preferire colazioni più tardive e cene più vicine all'orario di riposo. "
             "Mantieni regolari gli spuntini per non sregolare il metabolismo."
         )
-    else:  # Mattiniero
+    else:  # "Mattiniero", "Morning person", "Lève-tôt"
         return (
             "Sfrutta la mattina per una colazione abbondante e pianifica cene più leggere. "
             "Attenzione a non saltare i pasti se ti alzi molto presto."
@@ -90,17 +169,17 @@ def consigli_obiettivo(obiettivo):
     """
     Personalizza consigli in base all'obiettivo.
     """
-    if obiettivo == "Perdere peso":
+    if obiettivo in ["Perdere peso", "Lose weight", "Perdre du poids"]:
         return (
             "Riduci gradualmente l’apporto calorico e aumenta l’attività fisica. "
             "Focalizzati su cibi nutrienti e riduci zuccheri e grassi saturi."
         )
-    elif obiettivo == "Mantenere il peso":
+    elif obiettivo in ["Mantenere il peso", "Maintain weight", "Maintenir le poids"]:
         return (
             "Mantieni un apporto calorico bilanciato, in linea con il tuo fabbisogno. "
             "Continua con un esercizio fisico regolare."
         )
-    else:  # Performance sportiva
+    else:  # "Performance sportiva", "Sports performance", "Performance sportive"
         return (
             "Assicurati un apporto adeguato di proteine e carboidrati di qualità. "
             "Considera l’integrazione e un piano di allenamento specifico."
@@ -120,45 +199,64 @@ def salva_risposte_in_csv(risposte):
     else:
         df.to_csv(csv_file, mode='a', header=False, index=False)
 
+#########################
+#       Main App
+#########################
 def main():
-    st.title("Sondaggio Nutrizionale - MVP")
+    # Sélecteur de langue
+    language_choice = st.sidebar.selectbox(
+        "Seleziona la lingua / Select language / Choisissez la langue:",
+        ("Italiano", "English", "Français")
+    )
+
+    if language_choice == "Italiano":
+        lang = "it"
+    elif language_choice == "English":
+        lang = "en"
+    else:
+        lang = "fr"
+
+    # Titre principal
+    st.title(translations[lang]["app_title"])
 
     # 1) Peso e altezza
-    st.subheader("1) Qual è il tuo peso e altezza?")
+    st.subheader(translations[lang]["question1"])
     peso = st.number_input("Inserisci il tuo peso (kg)", min_value=1.0, max_value=300.0, value=70.0, step=0.5)
     altezza = st.number_input("Inserisci la tua altezza (cm)", min_value=50.0, max_value=250.0, value=175.0, step=0.5)
 
     # 2) Livello di attività fisica
-    st.subheader("2) Qual è il tuo livello di attività fisica?")
+    st.subheader(translations[lang]["question2"])
     livello_attivita = st.selectbox(
-        "Scegli il tuo livello",
-        ("Sedentario", "Attivo", "Atleta")
+        "",
+        activity_options[lang]
     )
 
     # 3) Preferenze alimentari
-    st.subheader("3) Quali sono le tue preferenze alimentari?")
+    st.subheader(translations[lang]["question3"])
     preferenze = st.selectbox(
-        "Scegli le tue preferenze",
-        ("Onnivoro", "Vegetariano", "Vegano")
+        "",
+        diet_options[lang]
     )
 
     # 4) Cronotipo
-    st.subheader("4) Sei un tipo notturno o mattiniero?")
+    st.subheader(translations[lang]["question4"])
     cronotipo = st.selectbox(
-        "Scegli il tuo cronotipo",
-        ("Notturno", "Mattiniero")
+        "",
+        sleep_options[lang]
     )
 
     # 5) Obiettivo
-    st.subheader("5) Qual è il tuo obiettivo?")
+    st.subheader(translations[lang]["question5"])
     obiettivo = st.selectbox(
-        "Scegli il tuo obiettivo",
-        ("Perdere peso", "Mantenere il peso", "Performance sportiva")
+        "",
+        goal_options[lang]
     )
 
-    if st.button("Invia e Ottieni Consigli"):
+    # Bouton
+    if st.button(translations[lang]["submit_button"]):
         # Creiamo un dizionario con tutte le risposte
         risposte_utente = {
+            "Lingua": language_choice,
             "Peso (kg)": peso,
             "Altezza (cm)": altezza,
             "LivelloAttività": livello_attivita,
@@ -172,26 +270,26 @@ def main():
 
         # Calcolo BMI
         bmi = calcola_bmi(peso, altezza)
-        st.write(f"**Il tuo BMI è:** {bmi if bmi else 'Valore non calcolabile'}")
+        st.write(f"{translations[lang]['bmi_label']} {bmi if bmi else 'Valore non calcolabile'}")
 
         # Consigli su macro
-        st.write("**Consigli sui macronutrienti:**")
+        st.write(translations[lang]["macro_advice"])
         st.write(consigli_macronutrienti(bmi))
 
         # Consigli su fabbisogno calorico
-        st.write("**Fabbisogno calorico aggiuntivo:**")
+        st.write(translations[lang]["calorie_advice"])
         st.write(fabbisogno_calorico_base(livello_attivita))
 
         # Consigli alimentari
-        st.write("**Consigli alimentari in base alle preferenze:**")
+        st.write(translations[lang]["diet_advice"])
         st.write(consigli_alimentari(preferenze))
 
         # Consigli orari pasti
-        st.write("**Consigli su orario dei pasti:**")
+        st.write(translations[lang]["meal_advice"])
         st.write(consigli_orari_pasti(cronotipo))
 
         # Consigli in base all'obiettivo
-        st.write("**Consigli in base al tuo obiettivo:**")
+        st.write(translations[lang]["goal_advice"])
         st.write(consigli_obiettivo(obiettivo))
 
 if __name__ == "__main__":
