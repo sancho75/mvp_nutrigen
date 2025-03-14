@@ -20,6 +20,10 @@ translations = {
         "diet_advice": "**Consigli alimentari in base alle preferenze:**",
         "meal_advice": "**Consigli su orario dei pasti:**",
         "goal_advice": "**Consigli in base al tuo obiettivo:**",
+        # Nouvelles chaînes pour le feedback
+        "feedback_question": "Hai qualche altro suggerimento o richiesta?",
+        "feedback_button": "Invia feedback e salva",
+        "feedback_thanks": "Grazie per il tuo feedback!"
     },
     "en": {
         "app_title": "Nutritional Survey - MVP",
@@ -35,6 +39,10 @@ translations = {
         "diet_advice": "**Nutritional Advice Based on Preferences:**",
         "meal_advice": "**Meal Timing Advice:**",
         "goal_advice": "**Advice Based on Your Goal:**",
+        # Feedback
+        "feedback_question": "Any other suggestions or requests?",
+        "feedback_button": "Send feedback and save",
+        "feedback_thanks": "Thank you for your feedback!"
     },
     "fr": {
         "app_title": "Sondage Nutritionnel - MVP",
@@ -50,10 +58,13 @@ translations = {
         "diet_advice": "**Conseils alimentaires selon vos préférences :**",
         "meal_advice": "**Conseils sur l'horaire des repas :**",
         "goal_advice": "**Conseils basés sur votre objectif :**",
+        # Feedback
+        "feedback_question": "Avez-vous d'autres suggestions ou demandes ?",
+        "feedback_button": "Envoyer le feedback et sauvegarder",
+        "feedback_thanks": "Merci pour votre feedback !"
     },
 }
 
-# Options pour chaque question, selon la langue
 activity_options = {
     "it": ["Sedentario", "Attivo", "Atleta"],
     "en": ["Sedentary", "Active", "Athlete"],
@@ -77,6 +88,7 @@ goal_options = {
     "en": ["Lose weight", "Maintain weight", "Sports performance"],
     "fr": ["Perdre du poids", "Maintenir le poids", "Performance sportive"],
 }
+
 
 #########################
 #     Funzioni esistenti
@@ -203,12 +215,18 @@ def salva_risposte_in_csv(risposte):
 #       Main App
 #########################
 def main():
+    # Pour mémoriser les réponses (et le feedback) entre deux clics
+    if "risposte_utente" not in st.session_state:
+        st.session_state["risposte_utente"] = None
+    if "show_suggestions" not in st.session_state:
+        st.session_state["show_suggestions"] = False
+
     # Sélecteur de langue
     language_choice = st.sidebar.selectbox(
         "Seleziona la lingua / Select language / Choisissez la langue:",
         ("Italiano", "English", "Français")
     )
-
+    # Déterminer la clé de langue
     if language_choice == "Italiano":
         lang = "it"
     elif language_choice == "English":
@@ -226,36 +244,24 @@ def main():
 
     # 2) Livello di attività fisica
     st.subheader(translations[lang]["question2"])
-    livello_attivita = st.selectbox(
-        "",
-        activity_options[lang]
-    )
+    livello_attivita = st.selectbox("", activity_options[lang])
 
     # 3) Preferenze alimentari
     st.subheader(translations[lang]["question3"])
-    preferenze = st.selectbox(
-        "",
-        diet_options[lang]
-    )
+    preferenze = st.selectbox("", diet_options[lang])
 
     # 4) Cronotipo
     st.subheader(translations[lang]["question4"])
-    cronotipo = st.selectbox(
-        "",
-        sleep_options[lang]
-    )
+    cronotipo = st.selectbox("", sleep_options[lang])
 
     # 5) Obiettivo
     st.subheader(translations[lang]["question5"])
-    obiettivo = st.selectbox(
-        "",
-        goal_options[lang]
-    )
+    obiettivo = st.selectbox("", goal_options[lang])
 
-    # Bouton
+    # Bouton principal (affiche les conseils, sans enregistrer tout de suite)
     if st.button(translations[lang]["submit_button"]):
-        # Creiamo un dizionario con tutte le risposte
-        risposte_utente = {
+        # On stocke les réponses dans la session (pas encore dans le CSV)
+        st.session_state["risposte_utente"] = {
             "Lingua": language_choice,
             "Peso (kg)": peso,
             "Altezza (cm)": altezza,
@@ -264,12 +270,15 @@ def main():
             "Cronotipo": cronotipo,
             "Obiettivo": obiettivo
         }
+        # Activer l'affichage des suggestions
+        st.session_state["show_suggestions"] = True
 
-        # Salviamo le risposte in CSV
-        salva_risposte_in_csv(risposte_utente)
+    # Si on doit afficher les suggestions (après avoir cliqué sur le premier bouton)
+    if st.session_state["show_suggestions"] and st.session_state["risposte_utente"] is not None:
+        risposte_utente = st.session_state["risposte_utente"]
 
         # Calcolo BMI
-        bmi = calcola_bmi(peso, altezza)
+        bmi = calcola_bmi(risposte_utente["Peso (kg)"], risposte_utente["Altezza (cm)"])
         st.write(f"{translations[lang]['bmi_label']} {bmi if bmi else 'Valore non calcolabile'}")
 
         # Consigli su macro
@@ -278,19 +287,35 @@ def main():
 
         # Consigli su fabbisogno calorico
         st.write(translations[lang]["calorie_advice"])
-        st.write(fabbisogno_calorico_base(livello_attivita))
+        st.write(fabbisogno_calorico_base(risposte_utente["LivelloAttività"]))
 
         # Consigli alimentari
         st.write(translations[lang]["diet_advice"])
-        st.write(consigli_alimentari(preferenze))
+        st.write(consigli_alimentari(risposte_utente["PreferenzeAlimentari"]))
 
         # Consigli orari pasti
         st.write(translations[lang]["meal_advice"])
-        st.write(consigli_orari_pasti(cronotipo))
+        st.write(consigli_orari_pasti(risposte_utente["Cronotipo"]))
 
         # Consigli in base all'obiettivo
         st.write(translations[lang]["goal_advice"])
-        st.write(consigli_obiettivo(obiettivo))
+        st.write(consigli_obiettivo(risposte_utente["Obiettivo"]))
+
+        # Nouvelle zone de texte pour feedback
+        st.subheader(translations[lang]["feedback_question"])
+        feedback = st.text_area("", placeholder="Scrivi qui il tuo feedback...")
+
+        # Bouton pour tout enregistrer
+        if st.button(translations[lang]["feedback_button"]):
+            # Ajouter le feedback aux réponses
+            risposte_utente["Feedback"] = feedback
+            # Enregistrer dans le CSV
+            salva_risposte_in_csv(risposte_utente)
+
+            st.success(translations[lang]["feedback_thanks"])
+            # On peut réinitialiser show_suggestions si on veut
+            st.session_state["show_suggestions"] = False
+
 
 if __name__ == "__main__":
     main()
